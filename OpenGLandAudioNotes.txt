@@ -1,0 +1,19 @@
+http://stackoverflow.com/questions/8434633/print-an-opengl-texture-to-file-without-display
+--this provides a snippet of code to forward openGL rendering to a file. 
+
+VNC would work for video. 
+look into SDL for audio and keypresses. 
+
+VirtualGL
+http://www.virtualgl.org/About/Introduction
+--> looks like what we might want-- does OpenGL rendering on the server, then forwards it to the client over VNC
+--> more info: http://virtualgl.svn.sourceforge.net/viewvc/virtualgl/vgl/tags/2.3.2/doc/index.html#hd003 
+(originally found here: https://devtalk.nvidia.com/default/topic/397417/cuda-programming-and-performance/cuda-with-opengl-tunneling-through-x11-a-tricky-problem-for-an-opengl-newbie-/)
+
+Sound
+NETWORKED PULSE AUDIO
+http://forums.linuxmint.com/viewtopic.php?f=157&t=59761
+http://blog.paulbetts.org/index.php/2007/04/15/pulseaudio-in-ubuntu-feisty-play-sound-over-the-network/
+http://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/PerfectSetup/
+ICECAST
+http://www.icecast.org/faq.php
