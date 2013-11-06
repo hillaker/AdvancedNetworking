@@ -5,8 +5,8 @@ ifeq ($(OS), Darwin)
 	LIBS = -framework OpenGL -framework GLUT -lc -lm
   CFLAGS = -g -Wall -m32
 else ifeq ($(OS), Linux)
-  LIBS = -lSOIL -lGL -lGLU -lglut -lm
-  CFLAGS = -g -O0 -Wall -Wno-deprecated -I./common/include
+  LIBS = -lGL -lGLU -lglut -lm -luuid
+  CFLAGS = -g -O0 -Wall -Wno-deprecated -I./common/include -I../buffercommon/include
 else
 	LIBS = -lGL -lGLU -lglut -lc -lm
   CFLAGS = -g -Wall -Wno-deprecated -m32
@@ -36,8 +36,3 @@ clean:
 
 depend: $(SRCS) $(SRCS_SLN) $(HDRS) $(HDRS_SLN) Makefile
 	$(MKDEP) $(CFLAGS) $(SRCS) $(SRCS_SLN) $(HDRS) $(HDRS_SLN) >& /dev/null
-
-# DO NOT DELETE
-
-shadows.o: xvec.h xmat.h
-xmat.o: xvec.h

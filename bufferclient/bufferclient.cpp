@@ -33,6 +33,12 @@
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include "protocol.h"
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -59,6 +65,9 @@ int end;                  /* which of the above points was
                              -1 if neither */
 int drift;                /* whether to drift the coordinate system */
 double offset=0.0;
+int openGLSocket;
+unsigned char * input;
+bool draw = false;
 
 /* Program initialization NOT OpenGL/GLUT dependent,
    as we haven't created a GLUT window yet */
@@ -75,76 +84,6 @@ init(void)
 }
 
 /* Callback functions for GLUT */
-
-/* Draw the window - this is where all the GL actions are */
-#if 0
-void
-display(void)
-{
-
-  /* clear the screen to white */
-
-     /* set the clearing color (color to clear to) to white (default black) */
-  glClearColor(1.0, 1.0, 1.0, 0.0);
-     /* actually perform clearing of the color buffer */
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  /* draw a black line of width 3 pixels
-     between the two points stored in the ends[] global array */
-
-     /* set the drawing color to black (default white) */
-  glColor3f(0.0, 0.0, 0.0);
-     /* set point size to 5 so that the endpoints are visible */
-  glPointSize(5.0);
-     /* Task 3: set line thickness to 3 pixels (default 1) */
-  glLineWidth(3.0);
-     /* draw the line */
-	/* Tasks 1 and 2 */
-	glBegin(GL_LINES); 
-	 glVertex2f(50,50); 
-	 glVertex2f(150,150); 
-	glEnd(); 
-
-  /* Task 4: draw a red square of width 2*ENDHWIDTH pixels
-     around each ends[] to highlight the end points. */
-     /* set the squares' color to red */
-     /* form quadrilaterals around each ends[]
-        - each quad takes a group of 4 points */
-    glColor3f(1.0,0.0, 0.0);
-	glBegin(GL_QUADS);
-		glVertex2f(50+(2*ENDHWIDTH), 50-(2*ENDHWIDTH));
-		glVertex2f(50-(2*ENDHWIDTH), 50-(2*ENDHWIDTH));
-		glVertex2f(50-(2*ENDHWIDTH), 50+(2*ENDHWIDTH));
-		glVertex2f(50+(2*ENDHWIDTH), 50+(2*ENDHWIDTH));
-	glEnd();
-	glBegin(GL_QUADS);
-		glVertex2f(150+(2*ENDHWIDTH), 150-(2*ENDHWIDTH));
-		glVertex2f(150-(2*ENDHWIDTH), 150-(2*ENDHWIDTH));
-		glVertex2f(150-(2*ENDHWIDTH), 150+(2*ENDHWIDTH));
-		glVertex2f(150+(2*ENDHWIDTH), 150+(2*ENDHWIDTH));
-	glEnd();
-
-  /* Task 5: draw a thin (1 pixel) green line on the x- and y-axes */
-	 glColor3f(0.0,1.0, 0.0);
-	 glLineWidth(1.0);
-	 glBegin(GL_LINES);
-		glVertex2f(-10000, 0);
-		glVertex2f(10000, 0);
-	 glEnd();
-	 glBegin(GL_LINES);
-		glVertex2f(0, -10000);
-		glVertex2f(0, 10000);
-	 glEnd();
-	 
-  /* Task 8: draw a 10x10 blue filled square around the Origin, *
-   *         use glPushAttrib() and glPopAttrib().              */
-
-  /* force drawing to start */
-  glFlush();
-  /*glutSwapBuffers();*/
-}
-#endif
-#if 1
 void display(void)
 {
   glLoadIdentity();
@@ -152,6 +91,12 @@ void display(void)
   //glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
   glClear(GL_COLOR_BUFFER_BIT);
   
+  if (draw == false)
+	{
+		std::cout << "not yet ready to draw-- exiting..." << std::endl;
+		return;
+	}
+  std::cout << "proceed to draw" << std::endl;
  /* glColor3f(0.0,1.0, 0.0);
 	 glLineWidth(5.0);
 	 glBegin(GL_LINES);
@@ -163,25 +108,24 @@ void display(void)
 		glVertex2f(0, 10000);
 	 glEnd();*/
   //int width, height, channels;
+  int imageWidth = 1600;
+  int imageHeight = 1200;
   GLuint fb;
   
   GLuint texture;
   glGenTextures(1, &texture);
-  glGenFramebuffers(1, &fb);
-
-  //glBindFramebuffer(GL_FRAMEBUFFER, fb);
-  //unsigned char* ship = SOIL_load_image("ShipatSea.jpg", &width, &height, &channels, SOIL_LOAD_RGB);
-  texture = SOIL_load_OGL_texture("ShipatSea.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
   glBindTexture(GL_TEXTURE_2D, texture);
- // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, ship);
+  //glBindFramebuffer(GL_FRAMEBUFFER, fb);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid *)0);
+ // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, input);
   
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 	
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
   
   
-  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE); 
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); 
   glEnable(GL_TEXTURE_2D); 
  
   glBegin(GL_QUADS); 
@@ -196,13 +140,12 @@ void display(void)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glDrawBuffer(GL_BACK);
   glDeleteFramebuffers(1, &fb);
-  //SOIL_free_image_data(ship);
   
   /* force drawing to start */
   glFlush();
  // glutSwapBuffers();
 }
-#endif
+
 void dummy(void)
 {
 	return;
@@ -405,9 +348,84 @@ initGL()
   glFrustum(-1.0, 1.0, -1.0, 1.0, 2.0, 7.0);
 }
 
+int setupSocket(const char * address, int port)
+{
+	int	sd;
+	struct sockaddr_in pin;
+
+	/* fill in the socket structure with host information */
+	memset(&pin, 0, sizeof(pin));
+	pin.sin_family = AF_INET;
+	inet_pton(AF_INET, address, &pin.sin_addr.s_addr);
+	pin.sin_port = htons(port);
+
+	/* grab an Internet domain socket */
+	if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+		perror("socket");
+		exit(1);
+	}
+
+	/* connect to PORT on HOST */
+	if (connect(sd,(struct sockaddr *)  &pin, sizeof(pin)) == -1) {
+		perror("connect");
+		exit(1);
+	}
+   return sd;
+}
+
+void socketHandler(void)
+{
+	int socketNum = openGLSocket;
+	long long receivedBytes;
+	unsigned long total;
+	draw = false;
+	total = 0;
+	packetHeader header;
+		/* send a message to the server PORT on machine HOST */
+	if (send(socketNum, "hello world", sizeof("hello world"), 0) == -1) {
+		perror("send");
+		exit(1);
+	}
+
+		/* wait for a message to come back from the server */
+	if ( (receivedBytes = recv(socketNum, &header, sizeof( header), 0)) == -1) {
+			   perror("recv");
+			   exit(1);
+	   }
+	GLuint pixelBuffer;
+	glGenBuffers(1, &pixelBuffer); 
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffer);
+	glBufferData(GL_PIXEL_UNPACK_BUFFER,  header.packetLength, NULL, GL_STREAM_DRAW);
+	input = (unsigned char *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+	//input = (unsigned char *)malloc(imageSize*sizeof(char));
+	//memset(input, 0,  header.packetLength*sizeof(char));
+	std::cout << "size of malloc: " <<  header.packetLength*sizeof(char) << std::endl;
+	do
+	{
+	   if ( (receivedBytes = recv(socketNum, &input[total],  header.packetLength, 0)) == -1) {
+			   perror("recv");
+			   exit(1);
+	   }
+	   //std::cout << test << std::endl;
+	   std::cout << "received " << receivedBytes << " bytes" << std::endl;
+	   total += receivedBytes;
+   } 
+   while(total <  header.packetLength);
+   
+   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); 
+
+   
+   std::cout << "total bytes received: " << total << std::endl;
+   
+   std::cout << "it is now safe to draw" << std::endl;
+   draw = true;
+}
+
 int
 main(int argc, char *argv[])
 {
+	openGLSocket = setupSocket("127.0.0.1", 8999);
+	//pthread_t socketHandlerThread; 
 	/* perform initialization NOT OpenGL/GLUT dependent,
        as we haven't created a GLUT window yet */
   init();
@@ -438,11 +456,14 @@ main(int argc, char *argv[])
   glutMouseFunc(click);
   /* register mouse-drag event callback */  
   glutMotionFunc(drag);
+  glutIdleFunc(socketHandler);
   
   initGL();
   glewInit();
   /* start the GLUT main loop */
+  //pthread_create(&socketHandlerThread, NULL, socketHandler, &openGLSocket);
   glutMainLoop();
-
+  std::cout << "closing main socket" << std::endl;
+  close(openGLSocket);
   return 0;
 }
