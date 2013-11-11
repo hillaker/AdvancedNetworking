@@ -5,7 +5,7 @@
 
 unsigned char *raw_image = NULL;
 
-int readJpeg( char *filename, long &size )
+int readJpeg(const char * filename, unsigned long &size )
 {
 	/* these are standard libjpeg structures for reading(decompression) */
 	struct jpeg_decompress_struct cinfo;
@@ -15,7 +15,7 @@ int readJpeg( char *filename, long &size )
 	
 	FILE *infile = fopen( filename, "rb" );
 	unsigned long location = 0;
-	int i = 0;
+	unsigned int i = 0;
 	
 	if ( !infile )
 	{
