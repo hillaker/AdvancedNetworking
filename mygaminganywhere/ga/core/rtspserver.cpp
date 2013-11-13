@@ -361,7 +361,7 @@ per_client_init(RTSPContext *ctx) {
 	ctx->sdp_fmtctx->oformat = fmt;
 	// video stream
 	for(i = 0; i < video_source_channels(); i++) {
-		if((ctx->sdp_vstream[i] = ga_avformat_new_stream(
+		if((ctx->sdp_vstream[i] = ga_avformat_new_stream( //IMPORTANT
 			ctx->sdp_fmtctx,
 			i, rtspconf->video_encoder_codec)) == NULL) {
 			//

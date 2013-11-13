@@ -20,6 +20,7 @@
 #include <pthread.h>
 #ifndef WIN32
 #include <unistd.h>
+#include <stdio.h>
 #endif
 
 #include "ga-common.h"
@@ -100,19 +101,20 @@ ga_rtp_init(const char *url) {
 }
 
 AVStream *
-ga_avformat_new_stream(AVFormatContext *ctx, int id, AVCodec *codec) {
+ga_avformat_new_stream(AVFormatContext *ctx, int id, AVCodec *codec) { //IMPORTANT
 	AVStream *st = NULL;
 	if(codec == NULL)
 		return NULL;
 	if((st = avformat_new_stream(ctx, codec)) == NULL)
 		return NULL;
+	printf("raw video name: %s\n", avcodec_get_name(CODEC_ID_RAWVIDEO));
 	// format specific index
 	st->id = id;
 	//
 	if(ctx->flags & AVFMT_GLOBALHEADER) {
 		st->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
 	}
-	if(codec->id == CODEC_ID_H264 || codec->id == CODEC_ID_AAC) {
+	if(codec->id == CODEC_ID_H264 || codec->id == CODEC_ID_AAC) { //IMPORTANT
 		// should we always set global header?
 		st->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
 	}

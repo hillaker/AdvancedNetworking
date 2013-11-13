@@ -196,7 +196,7 @@ rtspconf_parse(struct RTSPConf *conf) {
 		if(rtspconf_load_codec("video-encoder", ptr,
 			(const char**) conf->video_encoder_name,
 			&conf->video_encoder_codec,
-			ga_avcodec_find_encoder) < 0)
+			ga_avcodec_find_encoder) < 0) //IMPORTANT: use video_encoder_codec to find others
 			return -1;
 	}
 #if 0

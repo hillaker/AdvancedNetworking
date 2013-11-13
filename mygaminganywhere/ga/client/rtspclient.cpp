@@ -863,7 +863,7 @@ continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode, char* resultString
 		scs.session = MediaSession::createNew(env, sdpDescription);
 		delete[] sdpDescription; // because we don't need it anymore
 		if (scs.session == NULL) {
-			env << *rtspClient << "Failed to create a MediaSession object from the SDP description: " << env.getResultMsg() << "\n";
+			env << *rtspClient << "Failed to create a MediaSession object from the SDP description: " << env.getResultMsg() << "\n"; //IMPORTANT
 			break;
 		} else if (!scs.session->hasSubsessions()) {
 			env << *rtspClient << "This session has no media subsessions (i.e., no \"m=\" lines)\n";
