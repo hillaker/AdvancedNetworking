@@ -38,6 +38,7 @@ static int outputH;
 
 void *
 vencoder_threadproc(void *arg) {
+	/*
 	// arg is pointer to source pipe
 	// image info
 	int iid;
@@ -121,8 +122,9 @@ vencoder_threadproc(void *arg) {
 	//
 	pipe->client_register(ga_gettid(), &cond);
 	//
-	while(encoder_running() > 0) {
-		AVPacket pkt;
+	*/
+	while(1) {//encoder_running() > 0) {
+		/*AVPacket pkt;
 		int got_packet = 0;
 		// wait for notification
 		data = pipe->load_data();
@@ -189,7 +191,7 @@ vencoder_threadproc(void *arg) {
 			pkt.stream_index = 0;
 			// send the packet
 			if(encoder_send_packet_all("video-encoder",
-				rtp_id/*rtspconf->video_id*/, &pkt,
+				rtp_id/*rtspconf->video_id*//*, &pkt,
 				pkt.pts) < 0) {
 				goto video_quit;
 			}
@@ -207,9 +209,10 @@ vencoder_threadproc(void *arg) {
 				ga_error("first video frame written (pts=%lld)\n", pts);
 			}
 		}
+		*/
 	}
 	//
-video_quit:
+/*video_quit:
 	if(pipe) {
 		pipe->client_unregister(ga_gettid());
 		pipe = NULL;
@@ -222,6 +225,7 @@ video_quit:
 	//
 	ga_error("video encoder: thread terminated (tid=%ld).\n", ga_gettid());
 	//
+	*/
 	return NULL;
 }
 
