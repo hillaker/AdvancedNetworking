@@ -360,7 +360,7 @@ per_client_init(RTSPContext *ctx) {
 	}
 	ctx->sdp_fmtctx->oformat = fmt;
 	// video stream
-	for(i = 0; i < video_source_channels(); i++) {
+	/*for(i = 0; i < video_source_channels(); i++) {
 		if((ctx->sdp_vstream[i] = ga_avformat_new_stream(
 			ctx->sdp_fmtctx,
 			i, rtspconf->video_encoder_codec)) == NULL) {
@@ -379,7 +379,7 @@ per_client_init(RTSPContext *ctx) {
 			ga_error("cannot init video encoder\n");
 			return -1;
 		}
-	}
+	}*/
 	// audio stream
 #ifdef ENABLE_AUDIO
 	if((ctx->sdp_astream = ga_avformat_new_stream(
@@ -685,13 +685,13 @@ rtp_new_av_stream(RTSPContext *ctx, struct sockaddr_in *sin, int streamid, enum 
 	fmtctx->pb->seekable = 0;
 	//
 	if((stream = ga_avformat_new_stream(fmtctx, 0,
-			codecid == rtspconf->video_encoder_codec->id ?
-				rtspconf->video_encoder_codec : rtspconf->audio_encoder_codec)) == NULL) {
+			/*codecid == rtspconf->video_encoder_codec->id ?*/
+				/*rtspconf->video_encoder_codec :*/ rtspconf->audio_encoder_codec)) == NULL) {
 		ga_error("Cannot create new stream (%d)\n", codecid);
 		return -1;
 	}
 //#ifndef SHARE_ENCODER
-	if(codecid == rtspconf->video_encoder_codec->id) {
+	if(/*codecid == rtspconf->video_encoder_codec->id*/false) {
 		encoder = ga_avcodec_vencoder_init(
 				stream->codec,
 				rtspconf->video_encoder_codec,
@@ -826,7 +826,7 @@ rtsp_cmd_setup(RTSPContext *ctx, const char *url, RTSPMessageHeader *h) {
 	//
 	ctx->lower_transport[streamid] = th->lower_transport;
 	if(rtp_new_av_stream(ctx, &destaddr, streamid,
-			streamid == video_source_channels()/*rtspconf->audio_id*/ ?
+			true ?//streamid == video_source_channels()/*rtspconf->audio_id*/ ?
 				rtspconf->audio_encoder_codec->id : rtspconf->video_encoder_codec->id) < 0) {
 		ga_error("Create AV stream %d failed.\n", streamid);
 		errcode = RTSP_STATUS_TRANSPORT;

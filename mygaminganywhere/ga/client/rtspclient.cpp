@@ -913,11 +913,11 @@ setupNextSubsession(RTSPClient* rtspClient) {
 					} else {
 					////// Work with ffmpeg
 #endif
-					if(init_vdecoder(cid, scs.subsession->fmtp_spropparametersets()) < 0) {
+					/*if(init_vdecoder(cid, scs.subsession->fmtp_spropparametersets()) < 0) {
 						rtsperror("cannot initialize video decoder(%d)\n", cid);
 						rtspParam->quitLive555 = 1;
 						return;
-					}
+					}*/
 					rtsperror("video decoder(%d) initialized (client port %d)\n",
 						cid, scs.subsession->clientPortNum());
 #ifdef ANDROID

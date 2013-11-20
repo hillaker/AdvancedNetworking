@@ -1,0 +1,14 @@
+prefix=/home/vancexu/Projects/AdvancedNetworking/mygaminganywhere/deps.posix
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libavfilter
+Description: FFmpeg audio/video filtering library
+Version: 3.79.101
+Requires: 
+Requires.private: libpostproc = 52.3.100, libswresample = 0.17.102, libswscale = 2.3.100, libavformat = 55.12.100, libavcodec = 55.18.102, libavutil = 52.38.100
+Conflicts:
+Libs: -L${libdir} -lavfilter 
+Libs.private: -ldl -lasound -lxvidcore -lx264 -lvpx -lvpx -lvorbisenc -lvorbis -logg -ltheoraenc -ltheoradec -logg -L/home/vancexu/Projects/AdvancedNetworking/mygaminganywhere/deps.posix/lib -lopus -lmp3lame -lm -pthread -lz -lrt
+Cflags: -I${includedir}
