@@ -4,7 +4,9 @@
 #pragma pack(1)
 typedef struct 
 {
-	unsigned long packetLength;
+	int imageHeight;
+	int imageWidth;
+	int imageComponents;
 	uuid_t packetID;
 	struct timeval packetTime;
 } packetHeader;

@@ -6,7 +6,7 @@ ifeq ($(OS), Darwin)
   CFLAGS = -g -Wall -m32
 else ifeq ($(OS), Linux)
   LIBS = -lGL -lGLU -lglut -lm -ljpeg -luuid
-  CFLAGS = -g -O0 -Wall -Wno-deprecated -I./common/include -I../buffercommon/include
+  CFLAGS = -g -O0 -Wall -Wno-deprecated -I./include -I./common/include -I../buffercommon/include
 else
 	LIBS = -lGL -lGLU -lglut -lc -lm -ljpeg
   CFLAGS = -g -Wall -Wno-deprecated -m32
@@ -15,7 +15,7 @@ endif
 HDRS =
 SRCS =
 HDRS_SLN = 
-SRCS_SLN = bufferserver.cpp readJpeg.cpp
+SRCS_SLN = bufferserver.cpp readJpeg.cpp imageCapture.cpp
 OBJS = $(patsubst %.cpp, %.o, $(SRCS)) $(patsubst %.cpp,%.o,$(SRCS_SLN))
 ifeq ($(OS), Linux)
   GLEW = ./common/src/glew.o

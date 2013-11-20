@@ -39,6 +39,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "protocol.h"
+#include "bufferserver.h"
+#include "imageCapture.h"
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -48,7 +50,7 @@
 #ifdef __APPLE__
 #include <GLUT/glut.h>
 #else
-#include <SOIL/SOIL.h>
+//#include <SOIL/SOIL.h>
 #include <GL/glew.h>
 #include <GL/glut.h>
 #endif
@@ -69,6 +71,9 @@ int openGLSocket;
 unsigned char * input;
 bool draw = false;
 
+
+extern unsigned char *raw_image;
+
 /* Program initialization NOT OpenGL/GLUT dependent,
    as we haven't created a GLUT window yet */
 void
@@ -82,10 +87,6 @@ init(void)
   ends[1][0] = (int)(0.75*width);
   ends[1][1] = (int)(0.25*height);
 }
-
-extern int readJpeg(const char * filename, unsigned long &size );
-extern unsigned char *raw_image;
-int write_jpeg_file( char *filename );
 /* Callback functions for GLUT */
 
 /* Draw the window - this is where all the GL actions are */
@@ -173,14 +174,15 @@ void display(void)
 		glVertex2f(0, 10000);
 	 glEnd();*/
   //int width, height, channels;
-  int imageWidth = 1600;
-  int imageHeight = 1200;
+  int imageWidth = 1920;
+  int imageHeight = 1080;
   GLuint fb;
   
   GLuint texture;
   glGenTextures(1, &texture);
   glBindTexture(GL_TEXTURE_2D, texture);
   //glBindFramebuffer(GL_FRAMEBUFFER, fb);
+  
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, input);
   
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
@@ -421,7 +423,11 @@ void *serverHandler(void * args)
 	while(1)
 	{
 		packetHeader header;
-		readJpeg("test.jpg", header.packetLength);
+		readJpeg("test.jpg", header);
+		char * input = captureImage(header.imageHeight, header.imageWidth, header.imageComponents);
+		int imageSize = header.imageHeight*header.imageWidth*header.imageComponents;
+		std::cout << "height: " << header.imageHeight << " width: " << header.imageWidth 
+			<< " components: " << header.imageComponents << " total: " << imageSize << std::endl;
 		uuid_generate(header.packetID);
 		gettimeofday(&header.packetTime, NULL); 
 		memset(test, 0, sizeof(test));
@@ -436,10 +442,10 @@ void *serverHandler(void * args)
 			perror("send failed");
 			exit(1);
 		}
-		input = (unsigned char *)malloc(header.packetLength*sizeof(char));
-		memcpy(input, raw_image, header.packetLength);
-		std::cout << "image size: " << header.packetLength << " bytes" << std::endl;
-		if( (sentBytes = send(sd_current, raw_image, header.packetLength, 0)) == -1)
+		//input = (unsigned char *)malloc(imageSize*sizeof(char));
+		//memcpy(input, raw_image, imageSize);
+		std::cout << "image size: " << imageSize << " bytes" << std::endl;
+		if( (sentBytes = send(sd_current, input, imageSize, 0)) == -1)
 		{
 			perror("send failed");
 			exit(1);
@@ -448,7 +454,8 @@ void *serverHandler(void * args)
 		std::cout << "sent " << sentBytes << " bytes" << std::endl;
 		std::cout << "received: " << test << std::endl;
 		draw = true;
-		sleep(5);
+		free(input);
+		sleep(3);
 	}
 	close(sd_current);
 }
@@ -502,6 +509,7 @@ int
 main(int argc, char *argv[])
 {
 	pthread_t handlingThread;
+	initializeCapture();
 	openGLSocket = setupServer(8999);
 	/* perform initialization NOT OpenGL/GLUT dependent,
        as we haven't created a GLUT window yet */
@@ -538,8 +546,8 @@ main(int argc, char *argv[])
   //glewInit();
   /* start the GLUT main
    * loop */
-  //glutMainLoop();
   pthread_create(&handlingThread, NULL, serverHandler, &openGLSocket);
+  //glutMainLoop();
   while(1)
   {
 	  sleep(1);

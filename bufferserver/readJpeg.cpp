@@ -2,10 +2,11 @@
 #include <jpeglib.h>
 #include <stdlib.h>
 #include <iostream>
+#include "protocol.h"
 
 unsigned char *raw_image = NULL;
 
-int readJpeg(const char * filename, unsigned long &size )
+int readJpeg(const char * filename, packetHeader &header )
 {
 	/* these are standard libjpeg structures for reading(decompression) */
 	struct jpeg_decompress_struct cinfo;
@@ -42,7 +43,9 @@ int readJpeg(const char * filename, unsigned long &size )
 
 	/* allocate memory to hold the uncompressed image */
 	raw_image = (unsigned char*)malloc( cinfo.output_width*cinfo.output_height*cinfo.num_components );
-	size = cinfo.output_width*cinfo.output_height*cinfo.num_components;
+	header.imageHeight = cinfo.output_height;
+	header.imageWidth = cinfo.output_width;
+	header.imageComponents = cinfo.num_components;
 	/* now actually read the jpeg into the raw buffer */
 	row_pointer[0] = (unsigned char *)malloc( cinfo.output_width*cinfo.num_components );
 	/* read one scan line at a time */
