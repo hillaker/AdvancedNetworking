@@ -28,11 +28,10 @@ GLdouble width, height;   /* window width and height */
 int wd;                   /* GLUT window handle */
 int openGLSocket;
 GLuint texture;
-unsigned char * input;
+GLuint pixelBuffer;
 /* SUGIH: BEGIN moved from display() */
-int imageWidth = 1920;
-int imageHeight = 1080;
-extern unsigned char *raw_image;
+//int imageWidth = 1920;
+//int imageHeight = 1080;
 /* */
 
 /* Program initialization NOT OpenGL/GLUT dependent,
@@ -46,46 +45,26 @@ init(void)
   //ends[0][1] = (int)(0.75*height);
   //ends[1][0] = (int)(0.75*width);
   //ends[1][1] = (int)(0.25*height);
+  
 }
 
 /* Callback functions for GLUT */
 void 
 display(void)
 {
-  /* SUGIH: BEGIN move to initGL
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_2D, texture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid *)0);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 	
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
-  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); 
-  SUGIH: move to initGL */
-  glClearColor(0.7f, 0.8f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
   glEnable(GL_TEXTURE_2D); 
   
-  //glColor3f(1.0,0.0, 0.0);
   glBegin(GL_QUADS); 
 	glTexCoord2f(1.0,1.0); glVertex3f(width, height, 0.0);
 	glTexCoord2f(0.0,1.0); glVertex3f(0, height, 0.0);
 	glTexCoord2f(0.0,0.0); glVertex3f(0, 0, 0.0);
 	glTexCoord2f(1.0,0.0); glVertex3f(width, 0.0, 0.0);
   glEnd();
- /* if(raw_image)
-	{
-		std::cout << "before glFlush: " << glGetError() << std::endl;
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-		std::cout << "after glFlush: " << glGetError() << std::endl;
-	}*/
   glDisable(GL_TEXTURE_2D); // state machine! 
   
-  //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  //glDrawBuffer(GL_BACK);
-  //glDeleteFramebuffers(1, &fb);
   /* force drawing to start */
-  std::cout << "redrawing" << std::endl;
+  glDeleteBuffers(1, &pixelBuffer);
   glFlush();
  // glutSwapBuffers();
 }
@@ -105,76 +84,6 @@ reshape(int w, int h)
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   gluOrtho2D(0.0, width, 0.0, height);
-}
-
-void
-refresh(void)
-{
-	
-  static struct timeval prev;
-  struct timeval now;
-  double tprev;
-  double tnow;
-
-#ifdef _WIN32
-  SYSTEMTIME st;
-  
-  GetSystemTime(&st);
-  now.tv_sec = st.wSecond;
-  now.tv_usec = st.wMilliseconds*1000;
-#else
-  gettimeofday(&now, NULL);
-#endif
-
-  tprev = (double)prev.tv_sec + 1.0e-6*(double)prev.tv_usec;
-  tnow = (double)now.tv_sec + 1.0e-6*(double)now.tv_usec;
-  if ((tnow - tprev) > 0.1) {
-    prev.tv_sec = now.tv_sec;
-    prev.tv_usec = now.tv_usec;
-    
-    packetHeader header;
-    //read jpeg from disk
-   //readJpeg("test.jpg", header);
-  // glGenTextures(1, &texture);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, header.imageWidth, header.imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, raw_image);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 	
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
-   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); 
-
-    /* redisplay */
-    glutPostRedisplay();
-  }
-}
-
-void
-initGL()
-{
-  glGenTextures(1, &texture);
-   glBindTexture(GL_TEXTURE_2D, texture);
-  /*glBindTexture(GL_TEXTURE_2D, texture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 	
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
-  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); */
-  /* SUGIH: moved from initGL*/
-/*	GLuint pixelBuffer;
-	glGenBuffers(1, &pixelBuffer); 
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffer);
-*/
-  /* SUGIH: BEGIN move to initGL */
-  /*GLuint texture;
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_2D, texture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid *)0);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 	
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
-  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); */
-  /* */
 }
 
 int 
@@ -205,7 +114,7 @@ setupSocket(const char * address, int port)
 }
 
 void
-newSocketHandler(void)
+socketHandler(void)
 {
 	  static struct timeval prev;
   struct timeval now;
@@ -227,14 +136,12 @@ newSocketHandler(void)
   if ((tnow - tprev) > 0.1) {
     prev.tv_sec = now.tv_sec;
     prev.tv_usec = now.tv_usec;
-    
+    unsigned char * input;
     int socketNum = openGLSocket;
     int imageSize;
     int total = 0;
     int receivedBytes;
     packetHeader header;
-    //read jpeg from disk
-   //readJpeg("test.jpg", header);
    
    //do socket read
    if (send(socketNum, "hello world", sizeof("hello world"), 0) == -1) 
@@ -250,90 +157,34 @@ newSocketHandler(void)
 			   exit(1);
 	}
    imageSize = header.imageHeight*header.imageWidth*header.imageComponents;
-   input = (unsigned char *)malloc(imageSize*sizeof(char));
+  
+   glGenBuffers(1, &pixelBuffer); 
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffer);
+   glBufferData(GL_PIXEL_UNPACK_BUFFER,  imageSize, NULL, GL_STREAM_DRAW);  
+   input = (unsigned char *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
    do
 	{
 	   if ( (receivedBytes = recv(socketNum, &input[total],  imageSize, 0)) == -1) 
 	   {
 			   perror("recv");
+			   std::cout << "input: " << &input << " OpenGL error: " << glGetError() << std::endl;
 			   exit(1);
 	   }
-	   //std::cout << test << std::endl;
-	 //  std::cout << "received " << receivedBytes << " bytes" << std::endl;
 	   total += receivedBytes;
-	 //  std::cout << "(" << total << " bytes of " << imageSize << " bytes recieved)" << std::endl;
    } 
    while(total <  imageSize);
-   
-   //glGenTextures(1, &texture);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, header.imageWidth, header.imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, input);
+   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); 
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, header.imageWidth, header.imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 	
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); 
-
     /* redisplay */
+    glFinish();
     glutPostRedisplay();
   }
 }
-
-void 
-socketHandler(void)
-{
-	/*
-	int socketNum = openGLSocket;
-	long long receivedBytes;
-	unsigned long imageSize;
-	unsigned long total;
-	draw = false;
-	total = 0;
-	packetHeader header;
-	//send a message to the server PORT on machine HOST 
-	if (send(socketNum, "hello world", sizeof("hello world"), 0) == -1) {
-		perror("send");
-		exit(1);
-	}
-
-	// wait for a message to come back from the server
-	if ( (receivedBytes = recv(socketNum, &header, sizeof( header), 0)) == -1) {
-			   perror("recv");
-			   exit(1);
-	   }
-	imageHeight = header.imageHeight;
-	imageWidth = header.imageWidth;
-	imageSize = imageHeight*imageWidth*header.imageComponents;
-	//std::cout << "height: " << imageHeight << " width: " << imageWidth 
-	//	<< " components: " << header.imageComponents << " total: " << imageSize << std::endl;
-*/
-  /* SUGIH: BEGIN move to setupSocket
-	GLuint pixelBuffer; // make global
-	glGenBuffers(1, &pixelBuffer); 
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffer);
-     SUGIH: END move to setupSocket */
-
-	/*glBufferData(GL_PIXEL_UNPACK_BUFFER,  imageSize, NULL, GL_DYNAMIC_DRAW);  
-	input = (unsigned char *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-	//input = (unsigned char *)malloc(imageSize*sizeof(char));
-	//memset(input, 0,  header.packetLength*sizeof(char));
-	//std::cout << "size of malloc: " <<  imageSize*sizeof(char) << std::endl;
-	do
-	{
-	   if ( (receivedBytes = recv(socketNum, &input[total],  imageSize, 0)) == -1) {
-			   perror("recv");
-			   exit(1);
-	   }
-	   //std::cout << test << std::endl;
-	 //  std::cout << "received " << receivedBytes << " bytes" << std::endl;
-	   total += receivedBytes;
-	 //  std::cout << "(" << total << " bytes of " << imageSize << " bytes recieved)" << std::endl;
-   } 
-   while(total <  imageSize);
-   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); */
-   glutPostRedisplay();
-   //glFlush();
-
- }
 
 int
 main(int argc, char *argv[])
@@ -346,9 +197,7 @@ main(int argc, char *argv[])
   wd = glutCreateWindow("Client Buffer" /* title */ );
   glutDisplayFunc(display);
   glutReshapeFunc(reshape);
-  glutIdleFunc(newSocketHandler);
-  //glutIdleFunc(socketHandler);
-  //initGL();
+  glutIdleFunc(socketHandler);
 #ifndef __APPLE__
   glewInit();
 #endif
