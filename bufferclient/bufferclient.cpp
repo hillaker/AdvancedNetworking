@@ -116,36 +116,16 @@ setupSocket(const char * address, int port)
 void
 socketHandler(void)
 {
-	  static struct timeval prev;
-  struct timeval now;
-  double tprev;
-  double tnow;
+	unsigned char * input;
+	int socketNum = openGLSocket;
+	int imageSize;
+	int total = 0;
+	int receivedBytes;
+	packetHeader header;
 
-#ifdef _WIN32
-  SYSTEMTIME st;
-  
-  GetSystemTime(&st);
-  now.tv_sec = st.wSecond;
-  now.tv_usec = st.wMilliseconds*1000;
-#else
-  gettimeofday(&now, NULL);
-#endif
-
-  tprev = (double)prev.tv_sec + 1.0e-6*(double)prev.tv_usec;
-  tnow = (double)now.tv_sec + 1.0e-6*(double)now.tv_usec;
-  if ((tnow - tprev) > 0.1) {
-    prev.tv_sec = now.tv_sec;
-    prev.tv_usec = now.tv_usec;
-    unsigned char * input;
-    int socketNum = openGLSocket;
-    int imageSize;
-    int total = 0;
-    int receivedBytes;
-    packetHeader header;
-   
-   //do socket read
-   if (send(socketNum, "hello world", sizeof("hello world"), 0) == -1) 
-   {
+	//do socket read
+	if (send(socketNum, "hello world", sizeof("hello world"), 0) == -1) 
+	{
 		perror("send");
 		exit(1);
 	}
@@ -156,13 +136,13 @@ socketHandler(void)
 			   perror("recv");
 			   exit(1);
 	}
-   imageSize = header.imageHeight*header.imageWidth*header.imageComponents;
-  
-   glGenBuffers(1, &pixelBuffer); 
-   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffer);
-   glBufferData(GL_PIXEL_UNPACK_BUFFER,  imageSize, NULL, GL_STREAM_DRAW);  
-   input = (unsigned char *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-   do
+	imageSize = header.imageHeight*header.imageWidth*header.imageComponents;
+
+	glGenBuffers(1, &pixelBuffer); 
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffer);
+	glBufferData(GL_PIXEL_UNPACK_BUFFER,  imageSize, NULL, GL_STREAM_DRAW);  
+	input = (unsigned char *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+	do
 	{
 	   if ( (receivedBytes = recv(socketNum, &input[total],  imageSize, 0)) == -1) 
 	   {
@@ -171,19 +151,18 @@ socketHandler(void)
 			   exit(1);
 	   }
 	   total += receivedBytes;
-   } 
-   while(total <  imageSize);
-   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); 
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, header.imageWidth, header.imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 	
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
-   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); 
-    /* redisplay */
-    glFinish();
-    glutPostRedisplay();
-  }
+	} 
+	while(total <  imageSize);
+	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); 
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, header.imageWidth, header.imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); 
+	/* redisplay */
+	glFinish();
+	glutPostRedisplay();
 }
 
 int

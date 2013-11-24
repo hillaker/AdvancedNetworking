@@ -58,7 +58,7 @@ void initializeCapture()
 
 char * captureImage(int &height, int &width, int &depth)
 {
-	std::cout << "beginning image capture" << std::endl;
+	//std::cout << "beginning image capture" << std::endl;
 	char * outputBuffer;
 	unsigned long pixel;
 	width = image->width;
