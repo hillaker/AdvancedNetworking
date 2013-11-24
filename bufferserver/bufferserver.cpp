@@ -457,7 +457,7 @@ void *serverHandler(void * args)
 		draw = true;
 		free(input);
 		free(raw_image);
-		sleep(3);
+		usleep(1);
 	}
 	close(sd_current);
 }

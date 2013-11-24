@@ -228,11 +228,45 @@ newSocketHandler(void)
     prev.tv_sec = now.tv_sec;
     prev.tv_usec = now.tv_usec;
     
+    int socketNum = openGLSocket;
+    int imageSize;
+    int total = 0;
+    int receivedBytes;
     packetHeader header;
     //read jpeg from disk
-   readJpeg("test.jpg", header);
+   //readJpeg("test.jpg", header);
+   
+   //do socket read
+   if (send(socketNum, "hello world", sizeof("hello world"), 0) == -1) 
+   {
+		perror("send");
+		exit(1);
+	}
+
+		/* wait for a message to come back from the server */
+	if ( (receivedBytes = recv(socketNum, &header, sizeof( header), 0)) == -1) 
+	{
+			   perror("recv");
+			   exit(1);
+	}
+   imageSize = header.imageHeight*header.imageWidth*header.imageComponents;
+   input = (unsigned char *)malloc(imageSize*sizeof(char));
+   do
+	{
+	   if ( (receivedBytes = recv(socketNum, &input[total],  imageSize, 0)) == -1) 
+	   {
+			   perror("recv");
+			   exit(1);
+	   }
+	   //std::cout << test << std::endl;
+	 //  std::cout << "received " << receivedBytes << " bytes" << std::endl;
+	   total += receivedBytes;
+	 //  std::cout << "(" << total << " bytes of " << imageSize << " bytes recieved)" << std::endl;
+   } 
+   while(total <  imageSize);
+   
    //glGenTextures(1, &texture);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, header.imageWidth, header.imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, raw_image);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, header.imageWidth, header.imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, input);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 	
@@ -304,7 +338,7 @@ socketHandler(void)
 int
 main(int argc, char *argv[])
 {
-  //openGLSocket = setupSocket("127.0.0.1", 8999);
+  openGLSocket = setupSocket("127.0.0.1", 8999);
   init();
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
