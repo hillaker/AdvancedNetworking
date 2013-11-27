@@ -22,7 +22,10 @@
 #include <GLUT/glut.h>
 #else
 #include <GL/glew.h>
-#include <GL/freeglut.h>
+#include <GL/glut.h>
+#include <GL/freeglut_ext.h> //needed to for the glutCloseFunc that I'm using. 
+//if you don't have freeglut, it can be removed, but results will only be reported on 
+//a sigterm or sigint instead of when the glut window is closed. 
 
 #endif
 
