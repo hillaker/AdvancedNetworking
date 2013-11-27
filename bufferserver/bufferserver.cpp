@@ -69,16 +69,16 @@ void *serverHandler(void * args)
 	while(1)
 	{
 		packetHeader header;
+		gettimeofday(&header.packetTime, NULL);  //this has to be before the input capture
 		char * input = captureImage(header.imageHeight, header.imageWidth, header.imageComponents);
 		int imageSize = header.imageHeight*header.imageWidth*header.imageComponents;
 		uuid_generate(header.packetID);
-		gettimeofday(&header.packetTime, NULL); 
 		memset(test, 0, sizeof(test));
 		/* get a message from the client */
-		if (recv(sd_current, test, sizeof(test), 0) == -1) {
-			perror("recv");
-			exit(1);
-		}
+	//	if (recv(sd_current, test, sizeof(test), 0) == -1) {
+	//		perror("recv");
+	//		exit(1);
+	//	}
 		//unsigned char* ship = SOIL_load_image("ShipatSea.jpg", &width, &height, &channels, SOIL_LOAD_RGB);
 		if( (sentBytes = send(sd_current, &header, sizeof(header), 0)) == -1)
 		{
@@ -92,7 +92,7 @@ void *serverHandler(void * args)
 			exit(1);
 		}
 		free(input);
-		usleep(1);
+		//usleep(1);
 	}
 	close(sd_current);
 }

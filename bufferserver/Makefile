@@ -32,7 +32,7 @@ bufferserver: $(OBJS) $(GLEW)
 
 .PHONY: clean
 clean: 
-	-rm -f -r $(OBJS) *.o *~ *core* bufferclient
+	-rm -f -r $(OBJS) *.o *~ *core* bufferserver
 
 depend: $(SRCS) $(SRCS_SLN) $(HDRS) $(HDRS_SLN) Makefile
 	$(MKDEP) $(CFLAGS) $(SRCS) $(SRCS_SLN) $(HDRS) $(HDRS_SLN) >& /dev/null

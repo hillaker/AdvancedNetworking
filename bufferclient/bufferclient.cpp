@@ -8,6 +8,10 @@
 #include <unistd.h>
 #include "protocol.h"
 #include "bufferclient.h"
+#include <queue>
+#include <utility>
+#include <fstream>
+#include <signal.h>
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -18,7 +22,8 @@
 #include <GLUT/glut.h>
 #else
 #include <GL/glew.h>
-#include <GL/glut.h>
+#include <GL/freeglut.h>
+
 #endif
 
 #define NENDS 2           /* number of end "points" to draw */
@@ -29,6 +34,9 @@ int wd;                   /* GLUT window handle */
 int openGLSocket;
 GLuint texture;
 GLuint pixelBuffer;
+double floatingAvgMs = 0;
+std::queue< timeval > pendingTimes;
+std::queue<double> completeTimes;
 /* SUGIH: BEGIN moved from display() */
 //int imageWidth = 1920;
 //int imageHeight = 1080;
@@ -46,6 +54,20 @@ init(void)
   //ends[1][0] = (int)(0.75*width);
   //ends[1][1] = (int)(0.25*height);
   
+}
+
+void 
+storeTime(timeval time)
+{
+	static unsigned long numSamples = 0;
+	struct timeval now;
+	gettimeofday(&now, NULL);
+	double currentMs = ((now.tv_sec-time.tv_sec) * 1000) + ((now.tv_usec-time.tv_usec) / 1000); //calculate time in ms between when this was requested and now
+	floatingAvgMs = ((numSamples*floatingAvgMs)+currentMs)/(numSamples+1);
+	numSamples++;
+	completeTimes.push(currentMs);
+	//std::cout << "This sample was " << currentMs << " ms\t";
+	//std::cout << "Averaging " << floatingAvgMs << " ms ( "  << (1000/floatingAvgMs) << " FPS)"<< std::endl; 
 }
 
 /* Callback functions for GLUT */
@@ -66,6 +88,8 @@ display(void)
   /* force drawing to start */
   glDeleteBuffers(1, &pixelBuffer);
   glFlush();
+  storeTime(pendingTimes.front());
+  pendingTimes.pop();
  // glutSwapBuffers();
 }
 
@@ -124,11 +148,11 @@ socketHandler(void)
 	packetHeader header;
 
 	//do socket read
-	if (send(socketNum, "hello world", sizeof("hello world"), 0) == -1) 
-	{
-		perror("send");
-		exit(1);
-	}
+	//if (send(socketNum, "hello world", sizeof("hello world"), 0) == -1) 
+	//{
+	//	perror("send");
+	//	exit(1);
+	//}
 
 		/* wait for a message to come back from the server */
 	if ( (receivedBytes = recv(socketNum, &header, sizeof( header), 0)) == -1) 
@@ -136,6 +160,8 @@ socketHandler(void)
 			   perror("recv");
 			   exit(1);
 	}
+	//std::pair<uuid_t, timeval>timePair = std::make_pair<uuid_t, timeval>(header.packetID, header.packetTime);
+	pendingTimes.push(header.packetTime);
 	imageSize = header.imageHeight*header.imageWidth*header.imageComponents;
 
 	glGenBuffers(1, &pixelBuffer); 
@@ -165,10 +191,41 @@ socketHandler(void)
 	glutPostRedisplay();
 }
 
+void writeToDisk(int signal)
+{
+	std::fstream fs;
+	fs.open("results.txt", std::fstream::out | std::fstream::trunc);
+	while(completeTimes.size() > 0)
+	{
+		fs << completeTimes.front() << std::endl;
+		completeTimes.pop();
+	}
+	fs << "final average: " << floatingAvgMs << " ms." << std::endl;
+	fs.close();
+	close(openGLSocket);
+	exit(0);
+}
+
+void glutWriteToDisk()
+{
+	writeToDisk(0);
+}
+
 int
 main(int argc, char *argv[])
 {
-  openGLSocket = setupSocket("127.0.0.1", 8999);
+  signal(SIGTERM, &writeToDisk);
+  signal(SIGINT, &writeToDisk);
+  if(argc < 2)
+  {
+	  std::cout << "no IP address specified, defaulting to loopback..." << std::endl;
+	  openGLSocket = setupSocket("127.0.0.1", 8999);
+  }
+  else
+  {
+	  std::cout << "using provided address: " << argv[1] << std::endl;
+	  openGLSocket = setupSocket(argv[1], 8999);
+  }
   init();
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
@@ -177,12 +234,11 @@ main(int argc, char *argv[])
   glutDisplayFunc(display);
   glutReshapeFunc(reshape);
   glutIdleFunc(socketHandler);
+  glutCloseFunc(glutWriteToDisk);
 #ifndef __APPLE__
   glewInit();
 #endif
   /* start the GLUT main loop */
   glutMainLoop();
-  std::cout << "closing main socket" << std::endl;
-  //close(openGLSocket);
   return 0;
 }
