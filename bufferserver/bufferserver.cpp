@@ -42,7 +42,10 @@
 #include "imageCapture.h"
 #include <pthread.h>
 #include <sys/time.h>
-
+#include <sys/select.h>
+#include <X11/Xlib.h>
+#include <X11/extensions/XTest.h>
+#include <X11/keysym.h>
 #ifdef __APPLE__
 #include <GLUT/glut.h>
 #else
@@ -60,9 +63,135 @@ void dummy(void) //TODO: can't remove this for some reason, need to look into it
   glDisable(GL_TEXTURE_2D); 
 }
 
+//only supports a small subset up keys for now
+KeySym lookupKeySym(int key)
+{
+	if(key == GLUT_KEY_UP)
+	{
+		return XK_Up;
+	}
+	else if(key == GLUT_KEY_DOWN)
+	{
+		return XK_Down;
+	}
+	else if(key == GLUT_KEY_LEFT)
+	{
+		return XK_Left;
+	}
+	else if(key == GLUT_KEY_RIGHT)
+	{
+		return XK_Right;
+	}
+	else if(key == GLUT_KEY_PAGE_UP)
+	{
+		return XK_Page_Up;
+	}
+	else if(key == GLUT_KEY_PAGE_DOWN)
+	{
+		return XK_Page_Down;
+	}
+	else if(key == GLUT_KEY_HOME)
+	{
+		return XK_Home;
+	}
+	else if(key == GLUT_KEY_END)
+	{
+		return XK_End;
+	}
+	else if(key == GLUT_KEY_INSERT)
+	{
+		return XK_Insert;
+	}
+	else
+	{
+		std::cout << "failed to find keysym" << std::endl;
+		return 0;
+	}
+}
+
+void *keyboardHandler(void * args)
+{
+	int sd_current = *(int *)args;
+	keyPacket newKey; 
+	fd_set socketfd;
+	if(sd_current != -1)
+	{	//set up independent read/write for socket
+		FD_ZERO(&socketfd);
+		FD_SET(sd_current, &socketfd);	
+	}
+	Display *display = XOpenDisplay( NULL );
+	char input[2];
+	input[1] = 0;
+	while(1)
+	{
+		int testVal;
+		select(sd_current+1, &socketfd, (fd_set *) NULL, (fd_set *) NULL, (struct timeval *) NULL);
+		testVal = FD_ISSET(sd_current, &socketfd);
+		if(testVal)
+		{ 
+			if (recv(sd_current, &newKey, sizeof(newKey), 0) == -1) 
+			{
+				perror("recv");
+				exit(1);
+			}
+			else if(ntohs(newKey.packetType) == NORMAL_KEY_PACKET)
+			{
+				input[0] = ntohs(newKey.key);
+				char * kcodestr;
+				KeyCode keycode;
+				KeySym ksym;
+				ksym = XStringToKeysym(input);
+				if(ksym == NoSymbol && input[0]==' ')
+				{
+					ksym = XK_space;
+				}
+				keycode = XKeysymToKeycode(display, ksym);
+				XTestFakeKeyEvent(display, keycode, 1, 0);
+				XTestFakeKeyEvent(display, keycode, 0, 0);
+				printf("pushing keycode to xserver\n");
+				XFlush(display);
+				kcodestr = XKeysymToString(ksym);
+				printf("%c(%d)->%lu->%d->%s\n", *input, *input, ksym, keycode, kcodestr);
+			}
+			else if(ntohs(newKey.packetType) == SPECIAL_KEY_PACKET)
+			{
+				KeyCode keycode;
+				KeySym ksym;
+				std::cout << "received special key: " << ntohs(newKey.key) << std::endl;
+				if(ntohs(newKey.modifier) & GLUT_ACTIVE_SHIFT)
+				{
+					XTestFakeKeyEvent(display, XK_Shift_L, 1, 0);
+				}
+				if(ntohs(newKey.modifier) & GLUT_ACTIVE_ALT)
+				{
+					XTestFakeKeyEvent(display, XK_Control_L, 1, 0);
+				}
+				if(ntohs(newKey.modifier) & GLUT_ACTIVE_CTRL)
+				{
+					XTestFakeKeyEvent(display, XK_Alt_L, 1, 0);
+				}
+				//send keypress
+				ksym = lookupKeySym(ntohs(newKey.key));
+				keycode = XKeysymToKeycode(display, ksym);
+				XTestFakeKeyEvent(display, keycode, 1, 0);
+				XTestFakeKeyEvent(display, keycode, 0, 0);
+				//release all special keys
+				XTestFakeKeyEvent(display, XK_Alt_L, 0, 0);
+				XTestFakeKeyEvent(display, XK_Control_L, 0, 0);
+				XTestFakeKeyEvent(display, XK_Shift_L, 0, 0);
+				printf("pushing keycode to xserver\n");
+				XFlush(display);
+			}
+			else
+			{
+				std::cout << "invalid input packet, ignoring..." << std::endl;
+			}
+		}
+	}
+}
+
 void *serverHandler(void * args)
 {
-	char test[150];
 	long long sentBytes;
 	int sd_current = *(int *)args;
 	
@@ -73,7 +202,6 @@ void *serverHandler(void * args)
 		char * input = captureImage(header.imageHeight, header.imageWidth, header.imageComponents);
 		int imageSize = header.imageHeight*header.imageWidth*header.imageComponents;
 		uuid_generate(header.packetID);
-		memset(test, 0, sizeof(test));
 		/* get a message from the client */
 	//	if (recv(sd_current, test, sizeof(test), 0) == -1) {
 	//		perror("recv");
@@ -143,9 +271,11 @@ main(int argc, char *argv[])
 { 
 	int openGLSocket;
 	pthread_t handlingThread;
+	pthread_t keyboardThread;
 	initializeCapture();
 	openGLSocket = setupServer(8999);
 	pthread_create(&handlingThread, NULL, serverHandler, &openGLSocket);
+	pthread_create(&keyboardThread, NULL, keyboardHandler, &openGLSocket);
 	while(1)
 	{
 	  sleep(1);

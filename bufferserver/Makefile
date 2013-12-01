@@ -5,7 +5,7 @@ ifeq ($(OS), Darwin)
 	LIBS = -framework OpenGL -framework GLUT -lc -lm
   CFLAGS = -g -Wall -m32
 else ifeq ($(OS), Linux)
-  LIBS = -lXext -lX11 -lpthread -lGL -lGLU -lglut -lm -luuid
+  LIBS = -lXtst -lXext -lX11 -lpthread -lGL -lGLU -lglut -lm -luuid
   CFLAGS = -g -O0 -Wall -Wno-deprecated -I./include -I./common/include -I../buffercommon/include
 else
 	LIBS = -lGL -lGLU -lglut -lc -lm

@@ -194,6 +194,26 @@ socketHandler(void)
 	glutPostRedisplay();
 }
 
+void
+keyboardHandler(unsigned char key, int x, int y)
+{
+	keyPacket thisKey;
+	thisKey.packetType =  htons(NORMAL_KEY_PACKET);
+	thisKey.key = htons(key);
+	thisKey.modifier = htons(glutGetModifiers());
+	send(openGLSocket, &thisKey, sizeof(thisKey), 0);
+}
+
+void
+specialKeyHandler(int key, int x, int y)
+{
+	keyPacket thisKey;
+	thisKey.packetType = htons(SPECIAL_KEY_PACKET);
+	thisKey.key = htons(key);
+	thisKey.modifier = htons(glutGetModifiers());
+	send(openGLSocket, &thisKey, sizeof(thisKey), 0);
+}
+
 void writeToDisk(int signal)
 {
 	std::fstream fs;
@@ -235,6 +255,8 @@ main(int argc, char *argv[])
   glutInitWindowSize((int) width, (int) height);
   wd = glutCreateWindow("Client Buffer" /* title */ );
   glutDisplayFunc(display);
+  glutKeyboardFunc(keyboardHandler);
+  glutSpecialFunc(specialKeyHandler);
   glutReshapeFunc(reshape);
   glutIdleFunc(socketHandler);
   glutCloseFunc(glutWriteToDisk);
