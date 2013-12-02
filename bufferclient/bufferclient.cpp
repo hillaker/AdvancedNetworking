@@ -91,8 +91,11 @@ display(void)
   /* force drawing to start */
   glDeleteBuffers(1, &pixelBuffer);
   glFlush();
-  storeTime(pendingTimes.front());
-  pendingTimes.pop();
+  if(pendingTimes.size() > 0)
+  {
+	storeTime(pendingTimes.front());
+	pendingTimes.pop();
+  }
  // glutSwapBuffers();
 }
 
@@ -171,6 +174,7 @@ socketHandler(void)
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffer);
 	glBufferData(GL_PIXEL_UNPACK_BUFFER,  imageSize, NULL, GL_STREAM_DRAW);  
 	input = (unsigned char *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+	memset(input, 0, imageSize);
 	do
 	{
 	   if ( (receivedBytes = recv(socketNum, &input[total],  imageSize, 0)) == -1) 
