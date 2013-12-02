@@ -148,6 +148,7 @@ void *keyboardHandler(void * args)
 				{
 					XTestFakeKeyEvent(display, XK_Alt_L, 1, 0);
 				}
+				XFlush(display);
 				
 				input[0] = ntohs(newKey.key);
 				char * kcodestr;
@@ -160,11 +161,14 @@ void *keyboardHandler(void * args)
 				}
 				keycode = XKeysymToKeycode(display, ksym);
 				XTestFakeKeyEvent(display, keycode, 1, 0);
+				XFlush(display);
 				XTestFakeKeyEvent(display, keycode, 0, 0);
+				XFlush(display);
 				//release all special keys
 				XTestFakeKeyEvent(display, XK_Alt_L, 0, 0);
 				XTestFakeKeyEvent(display, XK_Control_L, 0, 0);
 				XTestFakeKeyEvent(display, XK_Shift_L, 0, 0);
+				XFlush(display);
 				printf("pushing keycode to xserver\n");
 				XFlush(display);
 				kcodestr = XKeysymToString(ksym);
