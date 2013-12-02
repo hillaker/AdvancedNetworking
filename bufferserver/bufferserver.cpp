@@ -136,6 +136,19 @@ void *keyboardHandler(void * args)
 			}
 			else if(ntohs(newKey.packetType) == NORMAL_KEY_PACKET)
 			{
+				if(ntohs(newKey.modifier) & GLUT_ACTIVE_SHIFT)
+				{
+					XTestFakeKeyEvent(display, XK_Shift_L, 1, 0);
+				}
+				if(ntohs(newKey.modifier) & GLUT_ACTIVE_ALT)
+				{
+					XTestFakeKeyEvent(display, XK_Control_L, 1, 0);
+				}
+				if(ntohs(newKey.modifier) & GLUT_ACTIVE_CTRL)
+				{
+					XTestFakeKeyEvent(display, XK_Alt_L, 1, 0);
+				}
+				
 				input[0] = ntohs(newKey.key);
 				char * kcodestr;
 				KeyCode keycode;
@@ -148,6 +161,10 @@ void *keyboardHandler(void * args)
 				keycode = XKeysymToKeycode(display, ksym);
 				XTestFakeKeyEvent(display, keycode, 1, 0);
 				XTestFakeKeyEvent(display, keycode, 0, 0);
+				//release all special keys
+				XTestFakeKeyEvent(display, XK_Alt_L, 0, 0);
+				XTestFakeKeyEvent(display, XK_Control_L, 0, 0);
+				XTestFakeKeyEvent(display, XK_Shift_L, 0, 0);
 				printf("pushing keycode to xserver\n");
 				XFlush(display);
 				kcodestr = XKeysymToString(ksym);

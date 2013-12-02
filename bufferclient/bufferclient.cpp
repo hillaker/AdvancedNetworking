@@ -197,6 +197,13 @@ socketHandler(void)
 void
 keyboardHandler(unsigned char key, int x, int y)
 {
+	if(glutGetModifiers() & GLUT_ACTIVE_CTRL)
+	{
+		if(key < ' ')
+		{
+			key = key + 'a' - 1;
+		}
+	}
 	keyPacket thisKey;
 	thisKey.packetType =  htons(NORMAL_KEY_PACKET);
 	thisKey.key = htons(key);
